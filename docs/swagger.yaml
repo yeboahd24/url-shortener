@@ -1,0 +1,572 @@
+basePath: /
+definitions:
+  handlers.APIKeyInfo:
+    properties:
+      created_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      key:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      user_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  handlers.AnalyticsResponse:
+    additionalProperties:
+      type: integer
+    type: object
+  handlers.CreateAPIKeyResponse:
+    properties:
+      api_key:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      created_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      user_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    type: object
+  handlers.CreateUserRequest:
+    properties:
+      email:
+        example: john@example.com
+        type: string
+      username:
+        example: john_doe
+        type: string
+    required:
+    - email
+    - username
+    type: object
+  handlers.CreateUserResponse:
+    properties:
+      created_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      email:
+        example: john@example.com
+        type: string
+      user_id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      username:
+        example: john_doe
+        type: string
+    type: object
+  handlers.DeleteAPIKeyRequest:
+    properties:
+      api_key:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+    required:
+    - api_key
+    type: object
+  handlers.ListAPIKeysResponse:
+    properties:
+      api_keys:
+        items:
+          $ref: '#/definitions/handlers.APIKeyInfo'
+        type: array
+    type: object
+  handlers.ListURLsResponse:
+    properties:
+      urls:
+        items:
+          $ref: '#/definitions/handlers.URLInfo'
+        type: array
+    type: object
+  handlers.ShortenURLRequest:
+    properties:
+      click_limit:
+        example: 100
+        type: integer
+      custom_id:
+        example: my-custom-url
+        type: string
+      expires_at:
+        example: "2024-12-31T23:59:59Z"
+        type: string
+      long_url:
+        example: https://example.com
+        type: string
+    required:
+    - long_url
+    type: object
+  handlers.ShortenURLResponse:
+    properties:
+      short_url:
+        example: abc123
+        type: string
+    type: object
+  handlers.URLInfo:
+    properties:
+      click_limit:
+        example: 100
+        type: integer
+      created_at:
+        example: "2023-01-01T00:00:00Z"
+        type: string
+      expires_at:
+        example: "2024-12-31T23:59:59Z"
+        type: string
+      long_url:
+        example: https://example.com
+        type: string
+      short_id:
+        example: abc123
+        type: string
+    type: object
+  handlers.UpdateURLRequest:
+    properties:
+      click_limit:
+        example: 200
+        type: integer
+      expires_at:
+        example: "2024-12-31T23:59:59Z"
+        type: string
+      long_url:
+        example: https://new-example.com
+        type: string
+    type: object
+host: localhost:9000
+info:
+  contact:
+    email: support@swagger.io
+    name: API Support
+    url: http://www.swagger.io/support
+  description: A comprehensive URL shortener service with analytics, user management,
+    and API key authentication.
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+  termsOfService: http://swagger.io/terms/
+  title: URL Shortener API
+  version: "1.0"
+paths:
+  /{shortID}:
+    get:
+      description: Redirect to the original URL using the short ID and log the click
+      parameters:
+      - description: Short URL ID
+        in: path
+        name: shortID
+        required: true
+        type: string
+      responses:
+        "301":
+          description: Redirect to original URL
+        "404":
+          description: URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Redirect to Original URL
+      tags:
+      - urls
+  /api/analytics/{shortID}:
+    get:
+      description: Get click analytics for a specific URL owned by the authenticated
+        user
+      parameters:
+      - description: Short URL ID
+        in: path
+        name: shortID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Analytics data by location
+          schema:
+            $ref: '#/definitions/handlers.AnalyticsResponse'
+        "401":
+          description: Unauthorized or URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Get URL Analytics
+      tags:
+      - analytics
+  /api/keys:
+    delete:
+      consumes:
+      - application/json
+      description: Delete an API key for the authenticated user
+      parameters:
+      - description: API key to delete
+        in: body
+        name: apikey
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.DeleteAPIKeyRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API key deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete API Key
+      tags:
+      - api-keys
+    get:
+      description: List all API keys for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API keys retrieved successfully
+          schema:
+            $ref: '#/definitions/handlers.ListAPIKeysResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List API Keys
+      tags:
+      - api-keys
+    post:
+      description: Create a new API key for the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: API key created successfully
+          schema:
+            $ref: '#/definitions/handlers.CreateAPIKeyResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Create API Key
+      tags:
+      - api-keys
+  /api/shorten:
+    post:
+      consumes:
+      - application/json
+      description: Create a shortened URL. Custom IDs require authentication.
+      parameters:
+      - description: URL to shorten
+        in: body
+        name: url
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ShortenURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL shortened successfully
+          schema:
+            $ref: '#/definitions/handlers.ShortenURLResponse'
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Authentication required for custom URLs
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Shorten URL
+      tags:
+      - urls
+  /api/urls:
+    get:
+      description: List all URLs created by the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URLs retrieved successfully
+          schema:
+            $ref: '#/definitions/handlers.ListURLsResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: List User URLs
+      tags:
+      - urls
+  /api/urls/{shortID}:
+    delete:
+      description: Delete a URL owned by the authenticated user
+      parameters:
+      - description: Short URL ID
+        in: path
+        name: shortID
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL deleted successfully
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Failed to delete URL or URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Delete URL
+      tags:
+      - urls
+    put:
+      consumes:
+      - application/json
+      description: Update URL settings for a URL owned by the authenticated user
+      parameters:
+      - description: Short URL ID
+        in: path
+        name: shortID
+        required: true
+        type: string
+      - description: URL update information
+        in: body
+        name: url
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.UpdateURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL updated successfully
+          schema:
+            $ref: '#/definitions/handlers.URLInfo'
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "404":
+          description: URL not found
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      security:
+      - ApiKeyAuth: []
+      summary: Update URL
+      tags:
+      - urls
+  /health:
+    get:
+      description: Check the health status of the application and its dependencies
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Service is healthy
+          schema:
+            additionalProperties: true
+            type: object
+        "503":
+          description: Service is unhealthy
+          schema:
+            additionalProperties: true
+            type: object
+      summary: Health Check
+      tags:
+      - health
+  /shorten:
+    post:
+      consumes:
+      - application/json
+      description: Create a shortened URL. Custom IDs require authentication.
+      parameters:
+      - description: URL to shorten
+        in: body
+        name: url
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.ShortenURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: URL shortened successfully
+          schema:
+            $ref: '#/definitions/handlers.ShortenURLResponse'
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Authentication required for custom URLs
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Shorten URL
+      tags:
+      - urls
+  /stats:
+    get:
+      description: Get global statistics including total URLs, clicks, and users
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Global statistics
+          schema:
+            additionalProperties: true
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Get Global Statistics
+      tags:
+      - statistics
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Create a new user account
+      parameters:
+      - description: User information
+        in: body
+        name: user
+        required: true
+        schema:
+          $ref: '#/definitions/handlers.CreateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User created successfully
+          schema:
+            $ref: '#/definitions/handlers.CreateUserResponse'
+        "400":
+          description: Bad request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal server error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Create User
+      tags:
+      - users
+securityDefinitions:
+  ApiKeyAuth:
+    description: API key for authentication
+    in: header
+    name: X-API-Key
+    type: apiKey
+swagger: "2.0"
